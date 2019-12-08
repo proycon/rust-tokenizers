@@ -12,6 +12,7 @@
 
 
 pub mod preprocessing;
+pub mod modeling;
 
 pub use preprocessing::vocab::{base_vocab::BaseVocab, bert_vocab::BertVocab};
 pub use preprocessing::tokenizer::bert_tokenizer;

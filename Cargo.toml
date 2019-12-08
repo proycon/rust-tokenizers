@@ -10,6 +10,7 @@ unicode-normalization = "0.1.8"
 rayon = "1.2.1"
 lazy_static = "1.4.0"
 itertools = "0.8.2"
+tch = { git = "https://github.com/LaurentMazare/tch-rs" , rev = "97bb47ee00c17371c1c9d163939e236a491068c8"}
 
 [dependencies.pyo3]
 version = "0.8.3"
