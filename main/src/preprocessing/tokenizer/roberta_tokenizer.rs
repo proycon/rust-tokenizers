@@ -63,13 +63,13 @@ impl Tokenizer<RobertaVocab> for RobertaTokenizer {
         let mut tokenized_text: Vec<String> = Vec::with_capacity(text.len() + 1);
         let temp_text = if !is_whitespace(&text.chars().next().unwrap()) {
             let text = format!("{}{}", ' ', text);
-            let temp_text = split_on_special_tokens(text.as_str(), self.vocab.as_ref());
+            let (temp_text, _offsets) = split_on_special_tokens(text.as_str(), self.vocab.as_ref());
             temp_text
                 .into_iter()
                 .map(|v| if self.lower_case { v.to_lowercase() } else { v.to_owned() })
                 .collect_vec()
         } else {
-            let temp_text = split_on_special_tokens(text, self.vocab.as_ref());
+            let (temp_text, _offsets) = split_on_special_tokens(text, self.vocab.as_ref());
             temp_text
                 .into_iter()
                 .map(|v| if self.lower_case { v.to_lowercase() } else { v.to_owned() })

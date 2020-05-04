@@ -36,9 +36,9 @@ pub struct TokenizedInput {
 pub trait Tokenizer<T: Vocab> {
     fn vocab(&self) -> &T;
 
-    fn tokenize(&self, text: &str) -> (Vec<String>, Vec<i64>);
+    fn tokenize(&self, text: &str) -> Vec<String>;
 
-    fn tokenize_list(&self, text_list: Vec<&str>) -> Vec<(Vec<String>, Vec<i64>)> {
+    fn tokenize_list(&self, text_list: Vec<&str>) -> Vec<Vec<String>> {
         text_list.
             into_iter().
             map(|text| self.tokenize(text)).
@@ -50,17 +50,17 @@ pub trait Tokenizer<T: Vocab> {
     }
 
     fn encode(&self, text_1: &str, text_2: Option<&str>, max_len: usize, truncation_strategy: &TruncationStrategy, stride: usize) -> TokenizedInput {
-        let (tokens_1, offsets_1) = self.tokenize(text_1);
+        let tokens_1 = self.tokenize(text_1);
         let token_ids_1 = self.convert_tokens_to_ids(&tokens_1);
         let len_1 = token_ids_1.len();
-        let (token_ids_2, len_2, pair, offsets_2) = {
+        let (token_ids_2, len_2, pair) = {
             if let Some(text) = text_2 {
-                let (tokens, offsets) = self.tokenize(text);
+                let tokens = self.tokenize(text);
                 let token_ids_2: Vec<i64> = self.convert_tokens_to_ids(&tokens);
                 let len_2 = token_ids_2.len();
-                (Some(token_ids_2), len_2, Some(vec!()), offsets)
+                (Some(token_ids_2), len_2, Some(vec!()))
             } else {
-                (None, 0, None, Vec::new())
+                (None, 0, None)
             }
         };
 //        ToDo: handle the offsets update based on truncation

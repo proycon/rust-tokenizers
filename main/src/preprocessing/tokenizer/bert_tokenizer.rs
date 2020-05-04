@@ -40,9 +40,10 @@ impl Tokenizer<BertVocab> for BertTokenizer {
         self.vocab.as_ref()
     }
 
-    fn tokenize(&self, text: &str)  -> (Vec<String>, Vec<i64>) {
+    fn tokenize(&self, text: &str)  -> Vec<String> {
         let mut tokenized_text: Vec<String> = Vec::with_capacity(text.len());
-        let temp_text = split_on_special_tokens(text, self.vocab.as_ref());
+        let (temp_text, _offsets) = split_on_special_tokens(text, self.vocab.as_ref());
+        println!("{:?}", temp_text);
         for text in temp_text {
             tokenized_text.extend(self.base_tokenizer.tokenize(text));
         }

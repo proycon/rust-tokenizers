@@ -51,7 +51,7 @@ impl Tokenizer<OpenAiGptVocab> for OpenAiGptTokenizer {
 
     fn tokenize(&self, text: &str) -> Vec<String> {
         let mut tokenized_text: Vec<String> = Vec::with_capacity(text.len());
-        let temp_text = split_on_special_tokens(text, self.vocab.as_ref());
+        let (temp_text, _offsets) = split_on_special_tokens(text, self.vocab.as_ref());
 
         for text in temp_text {
             if !self.vocab.special_values.contains_key(text) {

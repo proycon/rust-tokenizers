@@ -54,7 +54,7 @@ impl Tokenizer<OpenAiGptVocab> for CtrlTokenizer {
 
     fn tokenize(&self, text: &str) -> Vec<String> {
         let mut tokenized_text: Vec<String> = Vec::with_capacity(text.len());
-        let temp_text = split_on_special_tokens(text, self.vocab.as_ref());
+        let (temp_text, _offsets) = split_on_special_tokens(text, self.vocab.as_ref());
         let temp_text = temp_text
             .into_iter()
             .map(|v| if self.lower_case { v.to_lowercase() } else { v.to_owned() })

@@ -40,20 +40,29 @@ pub fn clean_text(text: &str, strict: bool) -> String {
     output
 }
 
-pub fn split_on_special_tokens<'a>(text: &'a str, vocab: &'a impl Vocab) -> Vec<&'a str> {
+pub fn split_on_special_tokens<'a>(text: &'a str, vocab: &'a impl Vocab) -> (Vec<&'a str>, Vec<(usize, usize)>) {
     let mut text_list: Vec<&str> = vec!(text);
     let mut temp_list: Vec<&str>;
-    let mut offsets: Vec<i64> = vec!();
+    let mut temp_offsets: Vec<(usize, usize)>;
+    let mut offsets: Vec<(usize, usize)> = vec!((0, text.len()));
 
     for special_value in vocab.special_values() {
         temp_list = vec!();
-        for subtext in &text_list {
+        temp_offsets = vec!();
+        for (subtext, previous_offset) in text_list.into_iter().zip(offsets.iter()) {
+            let (previous_start, _) = previous_offset;
             let (new_items, local_offsets) = split_with_separator(subtext, special_value.0.as_str());
             temp_list.extend(new_items);
+            let updated_offsets = local_offsets.
+                iter().
+                map(|(v1, v2)| (v1 + previous_start, v2 + previous_start))
+                .collect::<Vec<(usize, usize)>>();
+            temp_offsets.extend(updated_offsets);
         }
         text_list = temp_list;
+        offsets = temp_offsets;
     }
-    text_list
+    (text_list, offsets)
 }
 
 fn split_with_separator<'a>(text: &'a str, separator: &'a str) -> (Vec<&'a str>, Vec<(usize, usize)>) {
@@ -62,15 +71,17 @@ fn split_with_separator<'a>(text: &'a str, separator: &'a str) -> (Vec<&'a str>,
     let mut start_offsets: Vec<usize> = vec!();
 
     loop {
-        let position: Option<usize> = text[0..position].rfind(separator);
+        let position: Option<usize> = text[0..end_cursor].rfind(separator);
         match position {
             Some(value) => {
-                split_text.push(text[value..end_cursor]);
+                split_text.insert(0, &text[value + separator.len()..end_cursor]);
+                start_offsets.insert(0, value + separator.len());
+                split_text.insert(0, &text[value..value + separator.len()]);
                 start_offsets.insert(0, value);
                 end_cursor = value;
-            },
+            }
             None => {
-                split_text.push(text[0..end_cursor]);
+                split_text.insert(0, &text[0..end_cursor]);
                 start_offsets.insert(0, 0);
                 break;
             }
@@ -83,25 +94,11 @@ fn split_with_separator<'a>(text: &'a str, separator: &'a str) -> (Vec<&'a str>,
         result.push(text);
         return (result, vec!((0, 0)));
     }
-    for (i, (subtext, start_offset)) in split_text.iter().zip(start_offsets.iter()).enumerate() {
+    for (subtext, start_offset) in split_text.iter().zip(start_offsets.iter()) {
         let trimmed_subtext = subtext.trim_end();
         let len_trim_subset = trimmed_subtext.len();
-        if (i == 0) & trimmed_subtext.is_empty() {
-            result.push(separator);
-            offsets.push((start_offset, start_offset + separator.len()));
-        } else if i == split_text.len() - 1 {
-            if !trimmed_subtext.is_empty() {
-                result.push(trimmed_subtext);
-                offsets.push((start_offset, start_offset + len_trim_subset));
-            }
-        } else {
-            if !trimmed_subtext.is_empty() {
-                result.push(trimmed_subtext);
-                offsets.push((start_offset, start_offset + len_trim_subset));
-            }
-            result.push(separator);
-            offsets.push((start_offset + separator.len(), start_offset + separator.len() + separator.len()));
-        }
+        result.push(trimmed_subtext);
+        offsets.push((*start_offset, start_offset + len_trim_subset));
     }
     (result, offsets)
 }
@@ -581,7 +578,7 @@ mod tests {
 
 //        When & Then
         for (source_text, expected_result) in test_tuples.iter() {
-            assert_eq!(split_on_special_tokens(*source_text, &vocab), *expected_result);
+            assert_eq!(split_on_special_tokens(*source_text, &vocab).0, *expected_result);
         }
     }
 
