@@ -40,7 +40,7 @@ impl Tokenizer<BertVocab> for BertTokenizer {
         self.vocab.as_ref()
     }
 
-    fn tokenize(&self, text: &str) -> Vec<String> {
+    fn tokenize(&self, text: &str)  -> (Vec<String>, Vec<i64>) {
         let mut tokenized_text: Vec<String> = Vec::with_capacity(text.len());
         let temp_text = split_on_special_tokens(text, self.vocab.as_ref());
         for text in temp_text {
@@ -54,6 +54,10 @@ impl Tokenizer<BertVocab> for BertTokenizer {
             .map(|s| s.to_string())
             .collect();
         tokenized_text
+    }
+
+    fn convert_tokens_to_string(&self, tokens: Vec<String>) -> String {
+        tokens.join(" ").replace(" ##", "").trim().to_owned()
     }
 
     fn build_input_with_special_tokens(&self, tokens_1: Vec<i64>, tokens_2: Option<Vec<i64>>) -> (Vec<i64>, Vec<i8>, Vec<i8>) {
@@ -75,10 +79,6 @@ impl Tokenizer<BertVocab> for BertTokenizer {
             output.push(self.vocab.token_to_id(BertVocab::sep_value()));
         }
         (output, token_segment_ids, special_tokens_mask)
-    }
-
-    fn convert_tokens_to_string(&self, tokens: Vec<String>) -> String {
-        tokens.join(" ").replace(" ##", "").trim().to_owned()
     }
 }
 

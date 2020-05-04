@@ -43,11 +43,12 @@ pub fn clean_text(text: &str, strict: bool) -> String {
 pub fn split_on_special_tokens<'a>(text: &'a str, vocab: &'a impl Vocab) -> Vec<&'a str> {
     let mut text_list: Vec<&str> = vec!(text);
     let mut temp_list: Vec<&str>;
+    let mut offsets: Vec<i64> = vec!();
 
     for special_value in vocab.special_values() {
         temp_list = vec!();
         for subtext in &text_list {
-            let new_items = split_with_separator(subtext, special_value.0);
+            let (new_items, local_offsets) = split_with_separator(subtext, special_value.0.as_str());
             temp_list.extend(new_items);
         }
         text_list = temp_list;
@@ -55,29 +56,54 @@ pub fn split_on_special_tokens<'a>(text: &'a str, vocab: &'a impl Vocab) -> Vec<
     text_list
 }
 
-fn split_with_separator<'a>(text: &'a str, separator: &'a str) -> Vec<&'a str> {
-    let split_text: Vec<&str> = text.split(separator).collect();
+fn split_with_separator<'a>(text: &'a str, separator: &'a str) -> (Vec<&'a str>, Vec<(usize, usize)>) {
+    let mut end_cursor = text.len();
+    let mut split_text: Vec<&str> = vec!();
+    let mut start_offsets: Vec<usize> = vec!();
+
+    loop {
+        let position: Option<usize> = text[0..position].rfind(separator);
+        match position {
+            Some(value) => {
+                split_text.push(text[value..end_cursor]);
+                start_offsets.insert(0, value);
+                end_cursor = value;
+            },
+            None => {
+                split_text.push(text[0..end_cursor]);
+                start_offsets.insert(0, 0);
+                break;
+            }
+        }
+    }
+
     let mut result: Vec<&str> = vec!();
+    let mut offsets: Vec<(usize, usize)> = vec!();
     if text.is_empty() {
         result.push(text);
-        return result;
+        return (result, vec!((0, 0)));
     }
-    for (i, subtext) in split_text.iter().enumerate() {
+    for (i, (subtext, start_offset)) in split_text.iter().zip(start_offsets.iter()).enumerate() {
         let trimmed_subtext = subtext.trim_end();
+        let len_trim_subset = trimmed_subtext.len();
         if (i == 0) & trimmed_subtext.is_empty() {
             result.push(separator);
+            offsets.push((start_offset, start_offset + separator.len()));
         } else if i == split_text.len() - 1 {
             if !trimmed_subtext.is_empty() {
                 result.push(trimmed_subtext);
+                offsets.push((start_offset, start_offset + len_trim_subset));
             }
         } else {
             if !trimmed_subtext.is_empty() {
                 result.push(trimmed_subtext);
+                offsets.push((start_offset, start_offset + len_trim_subset));
             }
             result.push(separator);
+            offsets.push((start_offset + separator.len(), start_offset + separator.len() + separator.len()));
         }
     }
-    result
+    (result, offsets)
 }
 
 pub fn tokenize_cjk_chars(text: &str) -> String {
@@ -174,7 +200,7 @@ pub fn split_on_punct(text: String, vocab: &impl Vocab) -> Vec<String> {
     let mut output: Vec<String> = Vec::new();
     let mut start_new_word: bool = true;
     let mut temp_string = String::new();
-    if vocab.special_values().contains_key(&text) {
+    if vocab.special_values().contains_key(text.as_str()) {
         output.push(text);
         output
     } else {
